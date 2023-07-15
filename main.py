@@ -52,30 +52,37 @@ def get_data(arr:list) -> list:
     converting byte array to data list
     '''
     length = arr[0] #lenght of payload
-    crc8 = arr[-1] 
     
     src, shift1 = bytes_to_uleb128(arr[1: -1])
     dst, shift2 = bytes_to_uleb128(arr[1 + shift1: -1])
     serial, shift3 = bytes_to_uleb128(arr[1 + shift1 + shift2: -1])
-    print(src, dst, serial)
 
     shft = 1 + shift1 + shift2 + shift3
     del shift1, shift2, shift3
-    print(f"shift = {shft}")
 
     dev_type = arr[shft]
     cmd = arr[shft + 1]
     shft += 2
-
-    print(f"dev={dev_type}, cmd = {cmd}")
-
-    if dev_type == 6:
-        #timer
-        cmd_body, shft_cmd_body = bytes_to_uleb128(arr[shft:])
-        print(f"cmd_body = {cmd_body}")
-    print(crc8)
     
-    result = [length, src, dst, serial, dev_type, cmd, cmd_body, crc8]
+    if dev_type == 1:
+        pass
+    elif dev_type == 6:
+        #timer
+        pass
+
+    cmd_body, shft_cmd_body = bytes_to_uleb128(arr[shft:])
+        
+    crc8 = arr[shft + shft_cmd_body]
+    
+    result = {'length':length, 
+              'src':src, 
+              'dst':dst, 
+              'serial':serial, 
+              'dev_type':dev_type, 
+              'cmd':cmd, 
+              'cmd_body':cmd_body, 
+              'crc8':crc8
+    }
     
     return  result
 
@@ -91,7 +98,10 @@ byte_packet = [byte for byte in packet]
 
 data_packet = get_data(byte_packet)
 
-print(response.text)
+#print(response.text)
+#print(packet)
+#print(byte_packet)
+packet = b64_decode("DAH_fwEBAQVIVUIwMeE==")
 print(packet)
-print(byte_packet)
-print(data_packet)
+print([item for item in packet])
+print(get_data([item for item in packet]))
