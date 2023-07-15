@@ -7,6 +7,11 @@ from base64 import urlsafe_b64encode as b64_encode
 from sys import argv as sys_argv
 from sys import exit as sys_exit
 
+def failure(value=99):
+    '''Something went wrong'''
+    print(value)
+    sys_exit()
+
 #init
 #region init
 #cheking start arguments
@@ -20,8 +25,7 @@ elif len(sys_argv) == 1:
     srv_url = "http://localhost:9998"
 
 else:
-    print(99)
-    sys_exit()
+    failure()
 #endregion
 
 #functions
@@ -63,10 +67,17 @@ def get_data(arr:list) -> list:
     shft += 2
     
     if dev_type == 1:
-        pass
+        if cmd == 1:
+            pass
+        elif cmd == 2:
+            pass
+        else:
+            failure()
     elif dev_type == 6:
         #timer
         pass
+    else: 
+        failure()
 
     cmd_body, shft_cmd_body = bytes_to_uleb128(arr[shft:])
         
