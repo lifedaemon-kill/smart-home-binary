@@ -1,8 +1,6 @@
 '''python script for smart home hub'''
 # -*- coding:utf-8 -*-
 
-import base64
-from ctypes.wintypes import BYTE
 import requests
 from base64 import urlsafe_b64decode as b64_decode
 from base64 import urlsafe_b64encode as b64_encode
