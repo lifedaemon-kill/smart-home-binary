@@ -142,6 +142,33 @@ def get_response_data(byte_arr:list) -> list:
                 temp_result.append(dev_name)
             else:
                 failure()
+        
+        elif dev_type == 3:
+            #switch
+            if cmd == 4:
+                cmd_body = byte_arr[shft]
+                temp_result.append(cmd_body)
+
+            elif cmd == 1 or cmd == 2:
+                failure() #doesn't work
+
+                shft_cmd_body = byte_arr[shft] + 1 #shifting cmd_body block
+                dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
+                temp_result.append(dev_name)
+                
+                shft_names = shft + shft_cmd_body + 1 #shifting to names
+                shft_cmd_body += 1 #shift count of connected devices
+
+                count_conncted_devices = byte_arr[shft_names]
+
+                for i in range(count_conncted_devices):
+                    shft_dev_name = byte_arr[shft_names] + 1
+                    extra_dev_name =  byte_arr[shft_names + 1: shft_names + shft_dev_name].decode()
+                    temp_result.append(extra_dev_name)
+                    shft_names += shft_dev_name - 1
+            
+            else:
+                failure()
 
         elif dev_type == 4:
             #lamp
@@ -211,18 +238,29 @@ response = requests.post(srv_url)
 packet = b64_decode(response.text)
 data_packet = get_response_data(packet)
 
-print(f"response from serwer:\n{data_packet}")
+print(f"response from serwer (empty request):\n{data_packet}")
 print(response.text)
 
-print("\n\ntesting:\n")
+#region testing
+print("\ntesting:\n")
+# test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf' 'DbMG_39ABgbsxo7KlTFh' "DQT_fwsEAQZMQU1QMDG8==" "DoEg_3__BgYGgJ-s8pUxLhcC_39KAwIIU1dJVENIMDMBBkxBTVAwMks=="
+
+print("\nhub01")
+print(get_response_data(hub01))
+
+print("\nTimer-6 (DbMG_39ABgbsxo7KlTFh)")
 test_packet = b64_decode("DbMG_39ABgbsxo7KlTFh==")
-print(f"packet 'DbMG_39ABgbsxo7KlTFh' (timer 6)\n {get_response_data(test_packet)}")
+print(get_response_data(test_packet))
 
-# test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf' 'DbMG_39ABgbsxo7KlTFh' 
+print("\nLamp-6 (DQT_fwsEAQZMQU1QMDG8)")
+test_packet = b64_decode("DQT_fwsEAQZMQU1QMDG8==")
+print(get_response_data(test_packet))
 
-packet = b64_decode("DAH_fwEBAQVIVUIwMeE==")
-print(f"\npacket DAH_fwEBAQVIVUIwMeE (hub from github (1,1)")
+print("\nmulti-object (Timer-4 + Timer-6 + Lamp) (DoEg_3-FCAYGrIWt8pUxxRCBIP9_hggGAgdUSU1FUjAx9Q-CIP9_ugQEAgZMQU1QMDLe==)")
+packet = b64_decode("DoEg_3-FCAYGrIWt8pUxxRCBIP9_hggGAgdUSU1FUjAx9Q-CIP9_ugQEAgZMQU1QMDLe==")
 print(get_response_data(packet))
 
-print("\npacket hub01")
-print(get_response_data(hub01))
+#print("\nmulti-object (Timer-4 + Timer-6 + Lamp) (DoEg_3__BgYGgJ-s8pUxLhcC_39KAwIIU1dJVENIMDMBBkxBTVAwMks==)")
+#packet = b64_decode("DoEg_3__BgYGgJ-s8pUxLhcC_39KAwIIU1dJVENIMDMBBkxBTVAwMks==")
+#print(get_response_data(packet))
+#endregion
