@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import requests
+from struct import pack as byte_pack
 from base64 import urlsafe_b64decode as b64_decode
 from base64 import urlsafe_b64encode as b64_encode
 from sys import argv as sys_argv
@@ -13,28 +14,23 @@ broadcast = 0x3FFF
 itself = 0x0000
 high8bit = 0x80
 low7bit = 0x7F
-CRC_TABLE = [    0,   285,   570,   807,  1140,  1385,  1614,  1875,  2280,  2549,  2770,  3023, 
-              3228,  3457,  3750,  4027,  4557,  4304,  5111,  4842,  5561,  5284,  6019,  5790, 
-              6437,  6200,  6943,  6658,  7505,  7244,  8043,  7798,  9095,  8858,  8637,  8352, 
-             10227,  9966,  9673,  9428, 11119, 10866, 10581, 10312, 12059, 11782, 11553, 11324, 
-             12874, 13143, 12400, 12653, 13886, 14115, 13316, 13593, 15010, 15295, 14488, 14725, 
-             16086, 16331, 15596, 15857, 18195, 17934, 17705, 17460, 17255, 17018, 16733, 16448, 
-             20475, 20198, 19905, 19676, 19343, 19090, 18869, 18600, 22238, 22467, 21732, 22009, 
-             21162, 21431, 20624, 20877, 24118, 24363, 23564, 23825, 23106, 23391, 22648, 22885, 
-             25748, 25993, 26286, 26547, 24800, 25085, 25306, 25543, 27772, 28001, 28230, 28507, 
-             26632, 26901, 27186, 27439, 30041, 29764, 30563, 30334, 28973, 28720, 29463, 29194, 
-             32177, 31916, 32651, 32406, 31173, 30936, 31743, 31458, 36390, 36667, 35868, 36097, 
-             35410, 35663, 34920, 35189, 34510, 34771, 34036, 34281, 33466, 33703, 32896, 33181, 
-             40939, 40694, 40401, 40140, 39839, 39554, 39333, 39096, 38659, 38430, 38201, 37924, 
-             37751, 37482, 37197, 36944, 44449, 44220, 44955, 44678, 43477, 43208, 44015, 43762, 
-             42313, 42068, 42867, 42606, 41277, 40992, 41735, 41498, 48236, 48497, 48726, 48971, 
-             47128, 47365, 47650, 47935, 46212, 46489, 46782, 47011, 45296, 45549, 45770, 46039, 
-             51509, 51240, 51983, 51730, 52545, 52316, 53115, 52838, 49629, 49344, 50151, 49914, 
-             50601, 50356, 51091, 50830, 55544, 55781, 56002, 56287, 56460, 56721, 57014, 57259, 
-             53264, 53517, 53802, 54071, 54372, 54649, 54878, 55107, 60082, 60335, 59528, 59797, 
-             61126, 61403, 60668, 60897, 57946, 58183, 57440, 57725, 58926, 59187, 58388, 58633, 
-             64383, 64098, 63813, 63576, 65291, 65046, 64817, 64556, 62359, 62090, 61869, 61616, 
-             63459, 63230, 62937, 62660]
+CRC_TABLE = [  0,  29,  58,  39, 116, 105,  78,  83, 232, 245, 210, 207, 156, 129, 166, 187, 
+             205, 208, 247, 234, 185, 164, 131, 158,  37,  56,  31,   2,  81,  76, 107, 118, 
+             135, 154, 189, 160, 243, 238, 201, 212, 111, 114,  85,  72,  27,   6,  33,  60, 
+              74,  87, 112, 109,  62,  35,   4,  25, 162, 191, 152, 133, 214, 203, 236, 241, 
+              19,  14,  41,  52, 103, 122,  93,  64, 251, 230, 193, 220, 143, 146, 181, 168, 
+             222, 195, 228, 249, 170, 183, 144, 141,  54,  43,  12,  17,  66,  95, 120, 101, 
+             148, 137, 174, 179, 224, 253, 218, 199, 124,  97,  70,  91,   8,  21,  50,  47, 
+              89,  68,  99, 126,  45,  48,  23,  10, 177, 172, 139, 150, 197, 216, 255, 226, 
+              38,  59,  28,   1,  82,  79, 104, 117, 206, 211, 244, 233, 186, 167, 128, 157, 
+             235, 246, 209, 204, 159, 130, 165, 184,   3,  30,  57,  36, 119, 106,  77,  80, 
+             161, 188, 155, 134, 213, 200, 239, 242,  73,  84, 115, 110,  61,  32,   7,  26, 
+             108, 113,  86,  75,  24,   5,  34,  63, 132, 153, 190, 163, 240, 237, 202, 215, 
+              53,  40,  15,  18,  65,  92, 123, 102, 221, 192, 231, 250, 169, 180, 147, 142, 
+             248, 229, 194, 223, 140, 145, 182, 171,  16,  13,  42,  55, 100, 121,  94,  67, 
+             178, 175, 136, 149, 198, 219, 252, 225,  90,  71,  96, 125,  46,  51,  20,   9, 
+             127,  98,  69,  88,  11,  22,  49,  44, 151, 138, 173, 176, 227, 254, 217, 196
+]
 #endregion
 
 #functions
@@ -51,14 +47,17 @@ def calculate_table_crc8(number=256):
     
     for dividend in range(number):
         currByte = dividend
+        
         for bit in range(8):
-            if (currByte & 0x80) != 0:
-                currByte <<= 1
-                currByte ^= generator
+            if currByte & 0x80:
+                currByte = (currByte << 1) ^ generator
             else:
                 currByte <<= 1
-        CRC_TABLE[dividend] = currByte
+        CRC_TABLE[dividend] = currByte & 0xFF
+
     return CRC_TABLE
+
+#print(calculate_table_crc8())
 
 def bytes_to_uleb128(byte_arr:list) -> tuple:
     '''
@@ -81,26 +80,32 @@ def bytes_to_uleb128(byte_arr:list) -> tuple:
 
 def convert_to_bytes(arr:list) -> list:
     '''return byte array of the HUB payload (ULEB128)'''
-    result = []
-    for value in arr[0:3]:
-        while True:
-            byte =  value & 0x7F
-            value >>= 7
-            if value == 0:
-                result.append(byte)
-                break
-            else:
-                result.append(byte | 0x80)
+    binary_data = bytes()
+    for i in range(0, 3):
+        while payload[i] >= 128:
+            binary_data += byte_pack('B', (payload[i] & 0x7F) | 0x80)
+            payload[i] >>= 7
+        binary_data += byte_pack('B', payload[i])
 
-    result.extend(arr[3:5])
-    result.append(bytes(arr[5], 'utf-8'))
+    for i in range(3, 5):
+        binary_data += byte_pack('B', payload[i])
+
+    name_bytes = payload[-1].encode()
+    binary_data += byte_pack('B', len(name_bytes))
+    binary_data += name_bytes
+
+    return binary_data
 
 def get_crc8(bytes_)->int:
-    crc = 0
+    #print(bytes_)
+    crc = 0x00
     for byte in bytes_:
+        #print(f"byte={byte}", end=" ")
         data = byte ^ crc
+       # print(f"data = {data}")
         crc = CRC_TABLE[data]
-    
+
+    print(f"crc8={crc}")
     return crc
 
 def get_data(arr:list) -> list:
@@ -154,7 +159,7 @@ def get_data(arr:list) -> list:
 #endregion
 
 
-#init
+#init HUB01
 #region
 if len(sys_argv) == 3:
     #main module
@@ -172,17 +177,22 @@ dst = broadcast
 serial = 1
 dev_type = 1
 cmd = 1
-cmd_body = ["HUB01"]
+cmd_body = "HUB01"
 
 payload = [src, dst, serial, dev_type, cmd, cmd_body]
-
 bin_payload = convert_to_bytes(payload)
+
 lenght = len(bin_payload)
 crc8 = get_crc8(bin_payload)
 
-hub01 = [lenght]
-hub01.insert(bin_payload)
-hub01.append(crc8)
+hub01 = bytes()
+hub01 += byte_pack('B', lenght)
+hub01 += bin_payload
+hub01 += byte_pack('B', crc8)
+
+hub01_packet = b64_encode(hub01)
+print(f"HUB01={hub01}")
+print(f"HUB01 base64= {hub01_packet}")
 #endregion
 
 # test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf'
@@ -200,6 +210,7 @@ data_packet = get_data(byte_packet)
 #print(packet)
 #print(byte_packet)
 packet = b64_decode("DAH_fwEBAQVIVUIwMeE==")
+print("DAH_fwEBAQVIVUIwMeE==")
 print(packet)
 print([item for item in packet])
 print(get_data([item for item in packet]))
