@@ -33,8 +33,6 @@ CRC_TABLE = [  0,  29,  58,  39, 116, 105,  78,  83, 232, 245, 210, 207, 156, 12
 ]
 #endregion
 
-#functions
-#region
 def failure(value=99):
     '''Something went wrong'''
     print(value)
@@ -105,58 +103,68 @@ def get_crc8(bytes_)->int:
        # print(f"data = {data}")
         crc = CRC_TABLE[data]
 
-    print(f"crc8={crc}")
     return crc
 
-def get_data(arr:list) -> list:
+def get_response_data(byte_arr:list) -> list:
     '''
     converting byte array to data list
     '''
-    length = arr[0] #lenght of payload
-    
-    src, shift1 = bytes_to_uleb128(arr[1: -1])
-    dst, shift2 = bytes_to_uleb128(arr[1 + shift1: -1])
-    serial, shift3 = bytes_to_uleb128(arr[1 + shift1 + shift2: -1])
+    result = []
 
-    shft = 1 + shift1 + shift2 + shift3
-    del shift1, shift2, shift3
+    while len(byte_arr) > 0:
+        length = byte_arr[0] #lenght of payload
+        temp_result = [lenght]
 
-    dev_type = arr[shft]
-    cmd = arr[shft + 1]
-    shft += 2
-    
-    if dev_type == 1:
-        #hub
-        if cmd == 1:
-            #
-            pass
-        elif cmd == 2:
-            pass
-        else:
+        src, shift1 = bytes_to_uleb128(byte_arr[1: lenght])
+        temp_result.append(src)
+
+        dst, shift2 = bytes_to_uleb128(byte_arr[1 + shift1: lenght])
+        temp_result.append(dst)
+
+        serial, shift3 = bytes_to_uleb128(byte_arr[1 + shift1 + shift2: lenght])
+        temp_result.append(serial)
+
+        shft = 1 + shift1 + shift2 + shift3 #shift byte len + first 3 uleb value 
+        del shift1, shift2, shift3
+
+        dev_type = byte_arr[shft]
+        temp_result.append(dev_type)
+
+        cmd = byte_arr[shft + 1]
+        shft += 2 #shifting before cmd_body
+        temp_result.append(cmd)
+
+        if dev_type == 1:
+            #hub
+            if cmd == 1 or cmd == 2:
+                print("IM HUB!")
+                shft_cmd_body = byte_arr[shft] + 1 #shifting cmd_body block
+                dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
+                temp_result.append(dev_name)
+            else:
+                failure()
+
+        elif dev_type == 6:
+            #timer
+            if cmd == 2:
+                shft_cmd_body = byte_arr[shft] + 1
+                dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
+                temp_result.append(dev_name)
+            elif cmd == 6:
+                time_stamp, shft_cmd_body = bytes_to_uleb128(byte_arr[shft:])
+                temp_result.append(time_stamp)
+            else:
+                failure()
+        else: 
             failure()
-    elif dev_type == 6:
-        #timer
-        pass
-    else: 
-        failure()
-
-    cmd_body, shft_cmd_body = bytes_to_uleb128(arr[shft:])
         
-    crc8 = arr[shft + shft_cmd_body]
-    
-    result = {'length':length, 
-              'src':src, 
-              'dst':dst, 
-              'serial':serial, 
-              'dev_type':dev_type, 
-              'cmd':cmd, 
-              'cmd_body':cmd_body, 
-              'crc8':crc8
-    }
-    
-    return  result
+        crc8 = byte_arr[shft + shft_cmd_body]
+        temp_result.append(crc8)
 
-#endregion
+        result.append(temp_result)
+        byte_arr = byte_arr[shft + shft_cmd_body + 1::]
+
+    return result
 
 
 #init HUB01
@@ -191,26 +199,25 @@ hub01 += bin_payload
 hub01 += byte_pack('B', crc8)
 
 hub01_packet = b64_encode(hub01)
-print(f"HUB01={hub01}")
-print(f"HUB01 base64= {hub01_packet}")
+
 #endregion
 
-# test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf'
-
-
 response = requests.post(srv_url) 
-
 packet = b64_decode(response.text)
+data_packet = get_response_data(packet)
 
-byte_packet = [byte for byte in packet]
+print(f"response from serwer:\n{data_packet}")
+print(response.text)
 
-data_packet = get_data(byte_packet)
+print("\n\ntesting:\n")
+test_packet = b64_decode("DbMG_39ABgbsxo7KlTFh==")
+print(f"response 'DbMG_39ABgbsxo7KlTFh' (timer 6)\n {get_response_data(test_packet)}")
 
-#print(response.text)
-#print(packet)
-#print(byte_packet)
+# test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf' 'DbMG_39ABgbsxo7KlTFh' 
+
 packet = b64_decode("DAH_fwEBAQVIVUIwMeE==")
-print("DAH_fwEBAQVIVUIwMeE==")
-print(packet)
-print([item for item in packet])
-print(get_data([item for item in packet]))
+print(f"\npacket DAH_fwEBAQVIVUIwMeE (hub from github (1,1)")
+print(get_response_data(packet))
+
+print("\npacket hub01")
+print(get_response_data(hub01))
