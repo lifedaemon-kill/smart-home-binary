@@ -137,17 +137,22 @@ def get_response_data(byte_arr:list) -> list:
         if dev_type == 1:
             #hub
             if cmd == 1 or cmd == 2:
-                print("IM HUB!")
                 shft_cmd_body = byte_arr[shft] + 1 #shifting cmd_body block
                 dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
                 temp_result.append(dev_name)
             else:
                 failure()
 
+        elif dev_type == 4:
+            #lamp
+            shft_cmd_body = byte_arr[shft] + 1 #shifting cmd_body block
+            dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
+            temp_result.append(dev_name)
+
         elif dev_type == 6:
             #timer
             if cmd == 2:
-                shft_cmd_body = byte_arr[shft] + 1
+                shft_cmd_body = byte_arr[shft] + 1 #shifting cmd_body block
                 dev_name = byte_arr[shft + 1: shft + shft_cmd_body].decode()
                 temp_result.append(dev_name)
             elif cmd == 6:
@@ -211,7 +216,7 @@ print(response.text)
 
 print("\n\ntesting:\n")
 test_packet = b64_decode("DbMG_39ABgbsxo7KlTFh==")
-print(f"response 'DbMG_39ABgbsxo7KlTFh' (timer 6)\n {get_response_data(test_packet)}")
+print(f"packet 'DbMG_39ABgbsxo7KlTFh' (timer 6)\n {get_response_data(test_packet)}")
 
 # test vals 'DAH_fwEBAQVIVUIwMeE==' 'DbMG_38EBgb8l47KlTGf' 'DbMG_39ABgbsxo7KlTFh' 
 
